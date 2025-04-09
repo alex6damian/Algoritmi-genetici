@@ -131,19 +131,41 @@ int binarySearch(const vector<double>& intervaleSelectie, double u) {
     return left;
 }
 
-void procesSelectie(const vector<Individ>& populatie, const vector<double>& intervaleSelectie, vector<Individ>& indiviziSelectati)
+void procesSelectie(const vector<Individ>& populatie, const vector<double>& intervaleSelectie, vector<Individ>& indiviziSelectati, int gen)
 {
+    Individ individElitist = populatie[0];
+    double bestFitness = fitnessFunction(decodare(populatie[0]));
+    for (int j = 1; j < nrCromozomi; ++j) {
+        double currentFitness = fitnessFunction(decodare(populatie[j]));
+        if (currentFitness > bestFitness) {
+            bestFitness = currentFitness;
+            individElitist = populatie[j];
+        }
+    }
+
     // selectie proportionala
     for(int i=0; i < nrCromozomi; ++i){
         double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
-        out << "u= " << u;
+        if(gen == 1)out << "u= " << u;
         int index = binarySearch(intervaleSelectie, u); // cautam intervalul in care se afla u
         if(index == nrCromozomi)
             index--; // daca u este 1, luam ultimul interval
-        out << "    selectam cromozomul " << index + 1 << endl;
+        if(gen==1)out << "    selectam cromozomul " << index + 1 << endl;
         indiviziSelectati.push_back(populatie[index]); // selectam cromozomul
         }
 
+    int worstIndex = 0;
+    double worstFitness = fitnessFunction(decodare(indiviziSelectati[0]));
+    for (int i = 1; i < nrCromozomi; ++i) {
+        double currentFitness = fitnessFunction(decodare(indiviziSelectati[i]));
+        if (currentFitness < worstFitness) {
+            worstFitness = currentFitness;
+            worstIndex = i;
+        }
+    }
+    indiviziSelectati[worstIndex] = individElitist;
+
+    if(gen==1){
     out << "\n\n    Dupa selectie: \n";
     for (int i = 0; i < nrCromozomi; ++i, out << endl) {
         double x = decodare(indiviziSelectati[i]);
@@ -153,17 +175,21 @@ void procesSelectie(const vector<Individ>& populatie, const vector<double>& inte
         out << "f(x)= " << fitnessFunction(x) << " ";
     }
 }
+}
 
-void probabilitateIncrucisare(vector<Individ>& indiviziSelectati, vector<int>& indiviziIncrucisati)
+void probabilitateIncrucisare(vector<Individ>& indiviziSelectati, vector<int>& indiviziIncrucisati, int gen)
 {
-    out << "\n\n    Probabilitatea de incrucisare: " << probCrossover / 100.0 << endl;
-    for (int i = 0; i < nrCromozomi; ++i, out << endl) {
+    if(gen==1) out << "\n\n    Probabilitatea de incrucisare: " << probCrossover / 100.0 << endl;
+    for (int i = 0; i < nrCromozomi; ++i) {
         double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
         double x = decodare(indiviziSelectati[i]);
-        out << i+1 << ": " << indiviziSelectati[i]<< " ";
-        out << "u= " << u << " ";
+        if(gen==1){out << i+1 << ": " << indiviziSelectati[i]<< " ";
+        out << "u= " << u << " ";}
         if (u < probCrossover / 100.0) {
-            out<< "<" << probCrossover / 100.0 << " participa";
+            if(gen==1){
+                out<< "<" << probCrossover / 100.0 << " participa";
+                out << endl;
+        }
             indiviziIncrucisati.push_back(i); // adaugam individul la lista de indivizi incrucisati
         }
     }
@@ -174,12 +200,12 @@ void probabilitateIncrucisare(vector<Individ>& indiviziSelectati, vector<int>& i
 
 
     for(int i = 0; i < indiviziIncrucisati.size(); i+=2) {
-        out << "Recombinare dintre cromozomul " << indiviziIncrucisati[i] + 1 << " si cromozomul " << indiviziIncrucisati[i+1] + 1 << ": \n";
+        if(gen==1)out << "Recombinare dintre cromozomul " << indiviziIncrucisati[i] + 1 << " si cromozomul " << indiviziIncrucisati[i+1] + 1 << ": \n";
     
         int punctIncrucisare = rand() % lungimeCromozom; // punct de incrucisare
         Individ individ1 = indiviziSelectati[indiviziIncrucisati[i]];
         Individ individ2 = indiviziSelectati[indiviziIncrucisati[i+1]];
-        out << individ1 << " " << individ2 << " punctIncrucisare= " << punctIncrucisare << endl;
+        if(gen==1)out << individ1 << " " << individ2 << " punctIncrucisare= " << punctIncrucisare << endl;
     
         for(int j = 0; j < punctIncrucisare; j++) {
             swap(individ1[j], individ2[j]); // facem swap la cromozom
@@ -187,7 +213,7 @@ void probabilitateIncrucisare(vector<Individ>& indiviziSelectati, vector<int>& i
 
         indiviziSelectati[indiviziIncrucisati[i]] = individ1; // actualizam individul 1
         indiviziSelectati[indiviziIncrucisati[i+1]] = individ2; // actualizam individul 2
-        out << "Rezultat    "<< individ1 << " " << individ2 << endl;
+        if(gen==1)out << "Rezultat    "<< individ1 << " " << individ2 << endl;
         }
 }
 
@@ -203,19 +229,21 @@ void printRecombinare(const vector<Individ>& indiviziSelectati)
     }
 }
 
-void printMutatie(vector<Individ>& indiviziSelectati)
+void procesMutatie(vector<Individ>& indiviziSelectati, int gen)
 {
+    if(gen==1){
     out << "\n\n    Probabilitate de mutatie pentru fiecare gena: " << probMutatie/100.0 << " \n";
-    out << "\n\n    Au fost modificati cromozomii: \n";
+    out << "\n\n    Au fost modificati cromozomii: \n";}
     // folosim mutatia rara
     for(int i = 0; i < nrCromozomi; ++i) {
         double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
         if( u < probMutatie / 100.0) {
             int pozitie = rand() % lungimeCromozom; // pozitia la care se face mutatia
             indiviziSelectati[i][pozitie] = 1 - indiviziSelectati[i][pozitie]; // facem mutatia prin inversarea bitului
-            out << i+1 << endl;
+            if(gen==1)out << i+1 << endl;
         }
     }
+    if(gen==1){
     out << "\n\n    Dupa mutatie: \n";
     for (int i = 0; i < nrCromozomi; ++i, out << endl) {
         double x = decodare(indiviziSelectati[i]);
@@ -223,6 +251,7 @@ void printMutatie(vector<Individ>& indiviziSelectati)
         out << i+1 << ": " << individSelectat << " ";
         out << "x= " << x << " ";
         out << "f(x)= " << fitnessFunction(x) << " ";
+    }
     }
 }
 
@@ -252,19 +281,19 @@ int main()
     printIntervaleSelectie(intervaleSelectie);
 
     vector<Individ> indiviziSelectati;
-    procesSelectie(populatie, intervaleSelectie, indiviziSelectati);
+    procesSelectie(populatie, intervaleSelectie, indiviziSelectati, 1);
 
     vector<int> indiviziIncrucisati;
-    probabilitateIncrucisare(indiviziSelectati, indiviziIncrucisati);
+    probabilitateIncrucisare(indiviziSelectati, indiviziIncrucisati, 1);
 
     printRecombinare(indiviziSelectati);
 
-    printMutatie(indiviziSelectati);
+    procesMutatie(indiviziSelectati, 1);
     
 
     populatie = indiviziSelectati; // populatia devine populatia selectata
         
-    out << "\n\n";
+    out << "\nEvolutie generatii:";
     // Generatii
     for(int i=1; i<nrGeneratii;++i)
     {
@@ -276,52 +305,12 @@ int main()
         vector<double> intervaleSelectie;
         genereazaIntervaleSelectie(probabilitatiSelectie, intervaleSelectie);
 
-        vector<Individ> indiviziSelectati;
-        for(int i=0; i < nrCromozomi; ++i){
-            double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
-            int index = binarySearch(intervaleSelectie, u); // cautam intervalul in care se afla u
-            if(index == nrCromozomi)
-                index--; // daca u este 1, luam ultimul interval
-            indiviziSelectati.push_back(populatie[index]); // selectam cromozomul
-            }
+        procesSelectie(populatie, intervaleSelectie, indiviziSelectati, i+1);
 
-    
         vector<int> indiviziIncrucisati;
-        for (int i = 0; i < nrCromozomi; ++i) {
-            double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
-            double x = decodare(indiviziSelectati[i]);
-            if (u < probCrossover / 100.0) {
-                indiviziIncrucisati.push_back(i); // adaugam individul la lista de indivizi incrucisati
-            }
-        }
+        probabilitateIncrucisare(indiviziSelectati, indiviziIncrucisati, i+1);
         
-        if(indiviziIncrucisati.size() % 2 != 0) {
-            indiviziIncrucisati.pop_back(); // eliminam ultimul individ daca numarul de indivizi incrucisati este impar
-        }
-
-
-        for(int i = 0; i < indiviziIncrucisati.size(); i+=2) {
-
-            int punctIncrucisare = rand() % lungimeCromozom; // punct de incrucisare
-            Individ individ1 = indiviziSelectati[indiviziIncrucisati[i]];
-            Individ individ2 = indiviziSelectati[indiviziIncrucisati[i+1]];
-        
-            for(int j = 0; j < punctIncrucisare; j++) {
-                swap(individ1[j], individ2[j]); // facem swap la cromozom
-            }
-
-            indiviziSelectati[indiviziIncrucisati[i]] = individ1; // actualizam individul 1
-            indiviziSelectati[indiviziIncrucisati[i+1]] = individ2; // actualizam individul 2
-            }
-
-        // folosim mutatia rara
-        for(int i = 0; i < nrCromozomi; ++i) {
-            double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
-            if( u < probMutatie / 100.0) {
-                int pozitie = rand() % lungimeCromozom; // pozitia la care se face mutatia
-                indiviziSelectati[i][pozitie] = 1 - indiviziSelectati[i][pozitie]; // facem mutatia prin inversarea bitului
-            }
-        }
+        procesMutatie(indiviziSelectati, i+1);
 
         double maxFitness = fitnessFunction(decodare(indiviziSelectati[0]));
         double meanFitness = 0.0;
@@ -334,13 +323,11 @@ int main()
             }
         }
         meanFitness /= nrCromozomi;
-        out << "Generatia " << i+1 << " max fitness: " << maxFitness << endl;
+        out << "\nGeneratia " << i+1 << " max fitness: " << maxFitness << endl;
+        out << "Generatia " << i+1 << " mean fitness: " << meanFitness << endl;
         
         populatie = indiviziSelectati; // populatia devine populatia selectata
         
     }
     return 0;
 }
-
-
-// -x^4 + 4x^2 + 2x + 4
