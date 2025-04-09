@@ -10,9 +10,9 @@
 
 using namespace std;
 int nrCromozomi; // numarul de cromozomi
-int capatSt; // capatul stang al intervalului
-int capatDr;  // capatul drept al intervalului
-int a, b, c; // coeficienti pentru functia de fitness
+float capatSt; // capatul stang al intervalului
+float capatDr;  // capatul drept al intervalului
+int a, b, c, d; // coeficienti pentru functia de fitness
 int precizie; // precizia pentru functia de fitness
 int probCrossover; // probabilitatea de crossover
 int probMutatie; // probabilitatea de mutatie
@@ -26,7 +26,7 @@ void readFile()
 {
     in >> nrCromozomi;
     in >> capatSt >> capatDr;
-    in >> a >> b >> c;
+    in >> d >> a >> b >> c;
     in >> precizie;
     in >> probCrossover;
     in >> probMutatie;
@@ -44,11 +44,11 @@ Individ genereazaIndivid(){
     return individ;
 }
 double decodare(Individ individ) {
-    int x = 0;
+    float x = 0;
     for (int i = 0; i < lungimeCromozom; ++i) {
         x += individ[i] * pow(2, lungimeCromozom - i - 1);
     }
-    return a + (capatDr - capatSt) * x / (pow(2, lungimeCromozom) - 1);
+    return capatSt + (capatDr - capatSt) * x / (pow(2, lungimeCromozom) - 1);
 }
 // Overload <<
 ostream& operator<<(ostream& os, const Individ& individ) {
@@ -66,7 +66,7 @@ void genereazaPopulatie(vector<Individ>& populatie){
 
 double fitnessFunction(double x)
 {
-    return a * x * x + b * x + c;
+    return d * pow(x, 4) + a * x * x + b * x + c;
 }
 
 void calculeazaProbabilitatiSelectie(const vector<Individ>& populatie, vector<double>& probabilitatiSelectie, double& performantaTotala)
@@ -92,7 +92,7 @@ void genereazaIntervaleSelectie(const vector<double>& probabilitatiSelectie, vec
 
 void printPopulatieInitiala(const vector<Individ>& populatie)
 {
-    out << "\n\n    Populatia initiala: \n";
+    out << "    Populatia initiala: \n";
     for (int i = 0; i < nrCromozomi; ++i, out << endl) {
         double x = decodare(populatie[i]);
         out << i+1 << ": " << populatie[i] << " ";
@@ -133,6 +133,7 @@ int binarySearch(const vector<double>& intervaleSelectie, double u) {
 
 void procesSelectie(const vector<Individ>& populatie, const vector<double>& intervaleSelectie, vector<Individ>& indiviziSelectati)
 {
+    // selectie proportionala
     for(int i=0; i < nrCromozomi; ++i){
         double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
         out << "u= " << u;
@@ -259,7 +260,10 @@ int main()
     printRecombinare(indiviziSelectati);
 
     printMutatie(indiviziSelectati);
+    
 
+    populatie = indiviziSelectati; // populatia devine populatia selectata
+        
     out << "\n\n";
     // Generatii
     for(int i=1; i<nrGeneratii;++i)
@@ -319,9 +323,9 @@ int main()
             }
         }
 
-        double maxFitness = 0.0;
+        double maxFitness = fitnessFunction(decodare(indiviziSelectati[0]));
         double meanFitness = 0.0;
-        for(int j = 0; j < nrCromozomi; ++j) {
+        for(int j = 1; j < nrCromozomi; ++j) {
             double x = decodare(indiviziSelectati[j]);
             double fitnessVal = fitnessFunction(x);
             meanFitness += fitnessVal;
@@ -331,8 +335,12 @@ int main()
         }
         meanFitness /= nrCromozomi;
         out << "Generatia " << i+1 << " max fitness: " << maxFitness << endl;
-        out << "Generatia " << i+1 << " media fitness: " << meanFitness << endl;
-        out << endl;
+        
+        populatie = indiviziSelectati; // populatia devine populatia selectata
+        
     }
     return 0;
 }
+
+
+// -x^4 + 4x^2 + 2x + 4
