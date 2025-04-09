@@ -24,6 +24,7 @@ ofstream out("output");
 
 void readFile()
 {
+    // input
     in >> nrCromozomi;
     in >> capatSt >> capatDr;
     in >> d >> a >> b >> c;
@@ -143,8 +144,10 @@ void procesSelectie(const vector<Individ>& populatie, const vector<double>& inte
         }
     }
 
+    indiviziSelectati.push_back(individElitist); // adaugam individul elitist in populatie
+
     // selectie proportionala
-    for(int i=0; i < nrCromozomi; ++i){
+    for(int i=0; i < nrCromozomi-1; ++i){
         double u = (double)rand() / RAND_MAX; // numar aleator in [0, 1]
         if(gen == 1)out << "u= " << u;
         int index = binarySearch(intervaleSelectie, u); // cautam intervalul in care se afla u
@@ -153,17 +156,6 @@ void procesSelectie(const vector<Individ>& populatie, const vector<double>& inte
         if(gen==1)out << "    selectam cromozomul " << index + 1 << endl;
         indiviziSelectati.push_back(populatie[index]); // selectam cromozomul
         }
-
-    int worstIndex = 0;
-    double worstFitness = fitnessFunction(decodare(indiviziSelectati[0]));
-    for (int i = 1; i < nrCromozomi; ++i) {
-        double currentFitness = fitnessFunction(decodare(indiviziSelectati[i]));
-        if (currentFitness < worstFitness) {
-            worstFitness = currentFitness;
-            worstIndex = i;
-        }
-    }
-    indiviziSelectati[worstIndex] = individElitist;
 
     if(gen==1){
     out << "\n\n    Dupa selectie: \n";
@@ -299,15 +291,17 @@ int main()
     {
         vector<double> probabilitatiSelectie(nrCromozomi);
         vector<double> fitness(nrCromozomi);
+        vector<double> intervaleSelectie;
+        vector<int> indiviziIncrucisati;
         double performantaTotala;
+
         calculeazaProbabilitatiSelectie(populatie, probabilitatiSelectie, performantaTotala);
 
-        vector<double> intervaleSelectie;
+        
         genereazaIntervaleSelectie(probabilitatiSelectie, intervaleSelectie);
 
         procesSelectie(populatie, intervaleSelectie, indiviziSelectati, i+1);
 
-        vector<int> indiviziIncrucisati;
         probabilitateIncrucisare(indiviziSelectati, indiviziIncrucisati, i+1);
         
         procesMutatie(indiviziSelectati, i+1);
